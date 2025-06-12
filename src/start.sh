@@ -20,33 +20,47 @@ declare -a LORAS=(
 
 for model in "${LORAS[@]}"; do
   echo "Downloading $model.safetensors"
-  wget --header="Authorization: Bearer $HUGGINGFACE_TOKEN" \
+  if wget --header="Authorization: Bearer $HUGGINGFACE_TOKEN" \
     "https://huggingface.co/SouthDistrict/storybook-models/resolve/main/Lora/${model}.safetensors" \
-    -O "/stable-diffusion-webui/models/Lora/${model}.safetensors"
+    -O "/stable-diffusion-webui/models/Lora/${model}.safetensors"; then
+    echo "✓ ${model}.safetensors downloaded successfully"
+  else
+    echo "✗ ${model}.safetensors download failed"
+  fi
 done
 
-echo "All LoRA models downloaded."
+echo "All LoRA models download attempts completed."
 
 # ===[ STEP 2: Start WebUI API ]===
-echo "Starting WebUI API"
+echo "Starting WebUI API with proper parameters..."
 TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\d" | head -n 1)"
 export LD_PRELOAD="${TCMALLOC}"
 export PYTHONUNBUFFERED=true
-python /stable-diffusion-webui/webui.py \
+
+# Change to WebUI directory
+cd /stable-diffusion-webui
+
+# Start WebUI with corrected parameters
+python webui.py \
+  --api \
+  --listen \
+  --port 3000 \
+  --skip-torch-cuda-test \
+  --no-browser \
   --xformers \
   --no-half-vae \
   --skip-python-version-check \
-  --skip-torch-cuda-test \
   --skip-install \
   --ckpt /model.safetensors \
   --opt-sdp-attention \
   --disable-safe-unpickle \
-  --port 3000 \
-  --api \
   --nowebui \
   --skip-version-check \
   --no-hashing \
   --no-download-sd-model &
+
+# Wait a moment for WebUI to start
+sleep 5
 
 # ===[ STEP 3: Start RunPod Handler ]===
 echo "Starting RunPod Handler"
