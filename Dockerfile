@@ -42,7 +42,13 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir -r requirements.txt
 
-ADD src .
+# Copy source files to root
+COPY src/start.sh /start.sh
+COPY src/handler.py /handler.py
 
-RUN chmod +x /start.sh
-CMD /start.sh
+RUN chmod +x /start.sh /handler.py
+
+# Set the working directory
+WORKDIR /
+
+CMD ["/start.sh"]

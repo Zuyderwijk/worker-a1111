@@ -13,11 +13,19 @@
 ## Features
 
 ### 🎨 Story Generation
-- **Batch Processing**: Generate multiple story scenes in one request
+- **Batch Processing**: Generate multiple story scenes in one request  
+- **Dynamic Book Formats**: Support for all Lulu book sizes with optimal resolution generation
+- **Scene Illustrations**: High-quality illustrations optimized for chosen book format (45 steps, high-res fix)
 - **Character Consistency**: Use reference images to maintain character appearance across scenes
 - **Style Consistency**: Automatic seed locking ensures consistent artistic style throughout the story
-- **Print Optimization**: 768x768 resolution optimized for upscaling to 300 DPI print quality
-- **Book Cover Generation**: Specialized book cover creation with portrait format (512x768)
+- **Print Optimization**: High-resolution output suitable for professional publishing
+
+### 📚 Book Cover Generation  
+- **Professional Covers**: Specialized book cover creation matching chosen Lulu format
+- **Dynamic Dimensions**: Generates optimal resolution for selected book format (pocket_book, us_trade, square_small, etc.)
+- **Print Quality**: 50 steps, CFG 7.5, high-res fix for publication-ready covers
+- **Style Integration**: LoRA styles and character consistency for branded covers
+- **Marketing Ready**: Optimized prompts for eye-catching, commercial appeal
 
 ### 🎭 Available Story Styles (LoRAs)
 - `picture_book` - Classic children's book illustration style
@@ -59,7 +67,13 @@ Generate a complete story with multiple scenes and consistent characters:
 
 ### Book Cover Generation (New!)
 
-Generate a book cover with portrait format optimized for printing:
+Generate professional children's book covers with print-quality settings:
+
+**Optimized Features:**
+- **Resolution**: 768x1152 (2:3 aspect ratio, perfect for printing)
+- **Quality**: 50 steps, CFG 7.5, high-res fix for crisp details
+- **Professional**: Enhanced prompts, negative prompts, and LoRA styles
+- **Print-Ready**: R-ESRGAN upscaling for publication quality
 
 ```json
 {
