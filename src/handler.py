@@ -361,6 +361,102 @@ def generate_story_batch(scene_prompts, reference_images, story_config):
 
 
 # ---------------------------------------------------------------------------- #
+#                         Book Cover Generation Functions                      #
+# ---------------------------------------------------------------------------- #
+def build_book_cover_request(title, subtitle, style, theme, reference_images=None):
+    """Build inference request specifically for book covers"""
+    
+    # Book cover specific dimensions - portrait format for covers
+    cover_width = 512  # Standard book cover aspect ratio
+    cover_height = 768  # 2:3 ratio common for book covers
+    
+    # Book cover specific prompt construction
+    cover_prompt = f"""
+    Children's book cover illustration, "{title}" {f'- {subtitle}' if subtitle else ''}, 
+    {theme} theme, {style} art style, professional book cover design, 
+    title space at top, vibrant colors, eye-catching composition,
+    suitable for children aged 4-8, high quality cover art,
+    book cover layout, attractive design
+    """.strip().replace('\n', ' ')
+    
+    # Enhanced negative prompt for book covers
+    cover_negative_prompt = """
+    text overlay, existing text, watermarks, blurry, low quality, 
+    dark themes, scary elements, inappropriate content,
+    crowded composition, too busy, cluttered,
+    unprofessional layout, pixelated, distorted,
+    adult themes, violence, scary faces
+    """.strip().replace('\n', ' ')
+    
+    # Book cover optimized settings
+    request = {
+        "prompt": cover_prompt,
+        "negative_prompt": cover_negative_prompt,
+        "steps": 40,  # Higher quality for covers
+        "cfg_scale": 8.0,  # Stronger prompt adherence
+        "width": cover_width,
+        "height": cover_height,
+        "sampler_name": "DPM++ 2M Karras",
+        "seed": -1,  # Random for variety unless specified
+        "batch_size": 1,
+        "restore_faces": True,
+        "tiling": False,
+        "do_not_save_samples": True,
+        "do_not_save_grid": True
+    }
+    
+    # Add LoRA for style consistency
+    if style and get_lora_filename(style):
+        lora_trigger = f"<lora:{style}:1.0>"
+        request["prompt"] = f"{request['prompt']}, {lora_trigger}"
+        logger.info(f"Added LoRA for book cover style: {lora_trigger}")
+    
+    # Handle reference images for character consistency
+    if reference_images and len(reference_images) > 0:
+        primary_reference = reference_images[0]
+        processed_image = process_reference_image(primary_reference, 0)
+        
+        if processed_image:
+            request["init_images"] = [processed_image]
+            request["denoising_strength"] = 0.6  # Slightly lower for covers to allow more creativity
+            return request, "img2img"
+    
+    return request, "txt2img"
+
+
+def generate_book_cover(title, subtitle, style, theme, reference_images=None):
+    """Generate a book cover with specific optimizations"""
+    try:
+        logger.info(f"Generating book cover: {title}")
+        
+        # Build the cover-specific request
+        inference_request, method = build_book_cover_request(
+            title, subtitle, style, theme, reference_images
+        )
+        
+        # Generate the cover
+        result = run_inference(inference_request, method)
+        
+        # Add metadata specific to book covers
+        result["generation_type"] = "book_cover"
+        result["method_used"] = method
+        result["cover_config"] = {
+            "title": title,
+            "subtitle": subtitle,
+            "style": style,
+            "theme": theme,
+            "dimensions": f"{inference_request['width']}x{inference_request['height']}"
+        }
+        
+        logger.info("Book cover generation completed")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in book cover generation: {e}")
+        return {"error": f"Book cover generation failed: {str(e)}"}
+
+
+# ---------------------------------------------------------------------------- #
 #                                RunPod Handler                                #
 # ---------------------------------------------------------------------------- #
 def handler(event):
@@ -373,9 +469,10 @@ def handler(event):
                 "service_type": "story_batch_generation",
                 "available_loras": get_available_loras(),
                 "api_endpoint": API_BASE,
-                "supported_methods": ["single_scene", "story_batch"],
+                "supported_methods": ["single_scene", "story_batch", "book_cover"],
                 "features": [
                     "batch_story_generation",
+                    "book_cover_generation",
                     "character_consistency_via_reference_images",
                     "style_consistency_via_seed_locking",
                     "multiple_scene_prompts",
@@ -386,8 +483,12 @@ def handler(event):
                     "reference_images": "array of base64 images - character references",
                     "story_style": "string - LoRA name for artistic style",
                     "story_id": "string - unique identifier for reproducibility",
-                    "print_optimized": "bool - optimized for high-quality print output at 768x768",
-                    "recommended_dimensions": "768x768 (optimized for print upscaling to 300 DPI)"
+                    "generation_type": "string - 'book_cover' for covers, omit for scenes",
+                    "title": "string - book title (for covers)",
+                    "subtitle": "string - book subtitle (for covers)",
+                    "theme": "string - story theme (for covers)",
+                    "print_optimized": "bool - optimized for high-quality print output",
+                    "recommended_dimensions": "768x768 for scenes, 512x768 for covers"
                 }
             }
         
@@ -397,10 +498,34 @@ def handler(event):
         
         input_data = event["input"]
         
+        # Check if this is a book cover generation request
+        if input_data.get("action") == "generate_book_cover":
+            # BOOK COVER GENERATION
+            title = input_data.get("title", "Untitled Book")
+            author = input_data.get("author", "Unknown Author")
+            style = input_data.get("story_style", "picture_book")
+            theme = input_data.get("theme", "Adventure")
+            reference_images = input_data.get("reference_images", [])
+            
+            result = generate_book_cover(title, author, style, theme, reference_images)
+            return result
+        
         # Check if this is a batch story request
         scene_prompts = input_data.get("scene_prompts", [])
         
-        if scene_prompts and len(scene_prompts) > 0:
+        # Check if this is a book cover request
+        if input_data.get("generation_type") == "book_cover":
+            # BOOK COVER GENERATION
+            title = input_data.get("title", "Untitled Story")
+            subtitle = input_data.get("subtitle", "")
+            theme = input_data.get("theme", "magical adventure")
+            style = input_data.get("story_style", "picture_book")
+            reference_images = input_data.get("reference_images", [])
+            
+            result = generate_book_cover(title, subtitle, style, theme, reference_images)
+            return result
+            
+        elif scene_prompts and len(scene_prompts) > 0:
             # BATCH STORY GENERATION
             reference_images = input_data.get("reference_images", [])
             

@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                         Stage 1: Download the models                         #
 # ---------------------------------------------------------------------------- #
-FROM alpine/git:2.43.0 as download
+FROM alpine/git:2.43.0 AS download
 
 # NOTE: CivitAI usually requires an API token, so you need to add it in the header
 #       of the wget command if you're using a model from CivitAI.
@@ -11,7 +11,7 @@ RUN apk add --no-cache wget && \
 # ---------------------------------------------------------------------------- #
 #                        Stage 2: Build the final image                        #
 # ---------------------------------------------------------------------------- #
-FROM python:3.10.14-slim as build_final_image
+FROM python:3.10.14-slim AS build_final_image
 
 ARG A1111_RELEASE=v1.9.3
 
@@ -41,8 +41,6 @@ COPY --from=download /model.safetensors /model.safetensors
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir -r requirements.txt
-
-COPY test_input.json .
 
 ADD src .
 

@@ -17,6 +17,7 @@
 - **Character Consistency**: Use reference images to maintain character appearance across scenes
 - **Style Consistency**: Automatic seed locking ensures consistent artistic style throughout the story
 - **Print Optimization**: 768x768 resolution optimized for upscaling to 300 DPI print quality
+- **Book Cover Generation**: Specialized book cover creation with portrait format (512x768)
 
 ### 🎭 Available Story Styles (LoRAs)
 - `picture_book` - Classic children's book illustration style
@@ -52,6 +53,23 @@ Generate a complete story with multiple scenes and consistent characters:
     "steps": 35,
     "width": 768,
     "height": 768
+  }
+}
+```
+
+### Book Cover Generation (New!)
+
+Generate a book cover with portrait format optimized for printing:
+
+```json
+{
+  "input": {
+    "generation_type": "book_cover",
+    "title": "The Magic Forest Adventure",
+    "subtitle": "A Tale of Friendship",
+    "theme": "magical forest adventure with talking animals",
+    "story_style": "picture_book",
+    "reference_images": ["data:image/jpeg;base64,/9j/4AAQ..."]
   }
 }
 ```
