@@ -696,6 +696,24 @@ def calculate_print_dimensions(book_format):
 def handler(event):
     """Main handler for story batch generation"""
     try:
+        # Handle debug environment requests
+        if event.get("input", {}).get("action") == "debug_env":
+            import os
+            env_info = {
+                "status": "debug",
+                "environment_variables": {
+                    "HUGGINGFACE_TOKEN": "SET" if os.getenv("HUGGINGFACE_TOKEN") else "NOT SET",
+                    "HF_TOKEN": "SET" if os.getenv("HF_TOKEN") else "NOT SET", 
+                    "HUGGING_FACE_API_TOKEN": "SET" if os.getenv("HUGGING_FACE_API_TOKEN") else "NOT SET",
+                    "all_env_vars_with_token": [k for k in os.environ.keys() if "token" in k.lower()],
+                    "all_env_vars_with_hf": [k for k in os.environ.keys() if "hf" in k.lower()],
+                    "total_env_vars": len(os.environ)
+                }
+            }
+            if os.getenv("HUGGINGFACE_TOKEN"):
+                env_info["environment_variables"]["HUGGINGFACE_TOKEN_preview"] = os.getenv("HUGGINGFACE_TOKEN")[:10] + "..."
+            return env_info
+
         # Handle info/status requests
         if event.get("input", {}).get("action") == "get_info":
             return {

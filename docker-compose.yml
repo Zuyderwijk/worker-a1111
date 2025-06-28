@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  worker-a1111:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    environment:
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+      - RUNPOD_AI_API_KEY=${RUNPOD_AI_API_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./models:/stable-diffusion-webui/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
